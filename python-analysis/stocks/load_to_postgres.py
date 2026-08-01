@@ -1,4 +1,5 @@
 """Load the fetched CSVs into the daily_prices table in Postgres."""
+import os
 import pathlib
 import pandas as pd
 import psycopg2
@@ -7,7 +8,7 @@ from psycopg2.extras import execute_values
 from fetch_data import TICKERS
 
 RAW_DIR = pathlib.Path(__file__).parent / "data" / "raw"
-DB_DSN = "dbname=data_portfolio"
+DB_DSN = os.environ.get("DATABASE_URL", "dbname=data_portfolio")
 
 
 def main():

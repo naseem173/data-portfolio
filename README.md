@@ -10,6 +10,8 @@ analysis work through two flagship, end-to-end case studies:
    aggregation-heavy batting/bowling leaderboards, partnership and phase (powerplay/death-overs)
    breakdowns, team head-to-head records, interactive React dashboard.
 
+**Live:** https://naseem-data-portfolio.netlify.app (frontend on Netlify, API + Postgres on Railway)
+
 See [docs/PLAN.md](docs/PLAN.md) for the full architecture, tech stack, and roadmap.
 
 ## Monorepo layout
@@ -35,6 +37,17 @@ docs/               Planning docs, architecture notes, write-ups
    `requirements.txt`, then run each folder's `fetch_data.py` followed by its load script
    (`load_to_postgres.py` / `parse_and_load.py`)
 
+## Deployment
+
+- **Client**: Netlify (static build, `client/public/_redirects` handles React Router SPA routing)
+- **API + Postgres**: Railway (single project, `server/` deployed as its own service; `DATABASE_URL`
+  references the Postgres service internally)
+- To redeploy the client: `cd client && npm run build && netlify deploy --prod --dir=dist`
+- To redeploy the API: `railway up server --path-as-root --service api`
+- To reload data on the deployed Postgres: set `DATABASE_URL` to Railway's Postgres connection
+  string (via a TCP proxy for external access) and re-run each `python-analysis/*` load script
+
 ## Status
 
-✅ Both flagship case studies (stocks, cricket) are live end-to-end.
+✅ Both flagship case studies (stocks, cricket) are live end-to-end, deployed and reachable at the
+URL above.

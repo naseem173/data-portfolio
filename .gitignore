@@ -8,7 +8,11 @@ build/
 # Env files
 .env
 .env.local
+.env.production
 *.env
+
+# Netlify local state
+.netlify/
 
 # Python
 __pycache__/

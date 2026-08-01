@@ -5,12 +5,13 @@ Run fetch_data.py first to download the raw JSON files.
 """
 import csv
 import json
+import os
 import pathlib
 import psycopg2
 
 RAW_DIR = pathlib.Path(__file__).parent / "data" / "raw" / "ipl_json"
 OUT_DIR = pathlib.Path(__file__).parent / "data" / "processed"
-DB_DSN = "dbname=data_portfolio"
+DB_DSN = os.environ.get("DATABASE_URL", "dbname=data_portfolio")
 
 MATCH_FIELDS = [
     "match_id", "season", "match_date", "city", "venue", "team1", "team2",

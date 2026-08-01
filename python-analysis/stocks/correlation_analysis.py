@@ -5,10 +5,11 @@ a DataFrame, pivot to a date x symbol matrix, compute % change, then a single
 .corr() call gives the full correlation matrix. Results are written back to
 Postgres so the dashboard can serve them like any other query.
 """
+import os
 import pandas as pd
 import psycopg2
 
-DB_DSN = "dbname=data_portfolio"
+DB_DSN = os.environ.get("DATABASE_URL", "dbname=data_portfolio")
 
 
 def main():
