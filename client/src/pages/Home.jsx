@@ -12,8 +12,8 @@ const projects = [
     to: '/projects/cricket',
     title: 'Cricket Analytics',
     description:
-      'Match/innings/player data, SQL aggregation-heavy player & team stats, interactive dashboard.',
-    status: 'coming soon',
+      '295k+ ball-by-ball IPL deliveries, SQL aggregation-heavy player & team stats, interactive dashboard.',
+    status: 'live',
   },
 ]
 

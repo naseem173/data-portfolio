@@ -17,6 +17,10 @@ __pycache__/
 venv/
 .venv/
 
+# Large/reproducible data dumps (regenerate via fetch scripts)
+python-analysis/cricket/data/raw/
+python-analysis/cricket/data/processed/
+
 # OS
 .DS_Store
 

@@ -1,6 +1,7 @@
 import { Routes, Route, Link } from 'react-router-dom'
 import Home from './pages/Home'
 import StocksDashboard from './pages/StocksDashboard'
+import CricketDashboard from './pages/CricketDashboard'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/projects/stocks" element={<StocksDashboard />} />
+        <Route path="/projects/cricket" element={<CricketDashboard />} />
       </Routes>
     </div>
   )

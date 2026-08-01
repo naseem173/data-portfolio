@@ -1,0 +1,197 @@
+import { useEffect, useMemo, useState } from 'react'
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts'
+import { api } from '../api/client'
+
+export default function CricketDashboard() {
+  const [teams, setTeams] = useState([])
+  const [batting, setBatting] = useState([])
+  const [bowling, setBowling] = useState([])
+  const [headToHead, setHeadToHead] = useState([])
+  const [phaseBreakdown, setPhaseBreakdown] = useState([])
+  const [teamA, setTeamA] = useState('')
+  const [teamB, setTeamB] = useState('')
+
+  useEffect(() => {
+    api.get('/api/cricket/teams').then((res) => setTeams(res.data))
+    api.get('/api/cricket/batting?limit=15').then((res) => setBatting(res.data))
+    api.get('/api/cricket/bowling?limit=15').then((res) => setBowling(res.data))
+    api.get('/api/cricket/head-to-head').then((res) => setHeadToHead(res.data))
+    api.get('/api/cricket/phase-breakdown').then((res) => setPhaseBreakdown(res.data))
+  }, [])
+
+  const record = useMemo(() => {
+    if (!teamA || !teamB || teamA === teamB) return null
+    const a = [teamA, teamB].sort()
+    return headToHead.find((r) => r.team_a === a[0] && r.team_b === a[1]) || null
+  }, [teamA, teamB, headToHead])
+
+  return (
+    <div className="max-w-5xl mx-auto px-6 py-10">
+      <h1 className="text-3xl font-semibold text-gray-900">Cricket Analytics</h1>
+      <p className="text-gray-500 mt-1">
+        295k+ ball-by-ball IPL deliveries across 1,243 matches, PostgreSQL aggregation &amp; window
+        functions — Postgres → Express → React. Source:{' '}
+        <a href="https://cricsheet.org" target="_blank" rel="noreferrer" className="underline">
+          cricsheet.org
+        </a>
+        .
+      </p>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <LeaderboardCard
+          title="Batting leaders"
+          subtitle="min. 200 balls faced"
+          columns={[
+            { key: 'batter', label: 'Batter', align: 'left' },
+            { key: 'runs', label: 'Runs' },
+            { key: 'average', label: 'Avg' },
+            { key: 'strike_rate', label: 'SR' },
+            { key: 'sixes', label: '6s' },
+          ]}
+          rows={batting}
+        />
+        <LeaderboardCard
+          title="Bowling leaders"
+          subtitle="min. 200 legal balls bowled"
+          columns={[
+            { key: 'bowler', label: 'Bowler', align: 'left' },
+            { key: 'wickets', label: 'Wkts' },
+            { key: 'economy', label: 'Econ' },
+            { key: 'average', label: 'Avg' },
+            { key: 'bowling_strike_rate', label: 'SR' },
+          ]}
+          rows={bowling}
+        />
+      </div>
+
+      <h2 className="text-xl font-semibold text-gray-900 mt-10 mb-3">
+        Powerplay vs. death-overs scoring by team
+      </h2>
+      <div className="bg-white border border-gray-200 rounded-xl p-4 h-80">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={phaseBreakdown} margin={{ bottom: 40 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+            <XAxis
+              dataKey="batting_team"
+              angle={-30}
+              textAnchor="end"
+              interval={0}
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="avg_powerplay_runs" name="Avg powerplay runs (overs 1-6)" fill="#3b82f6" />
+            <Bar dataKey="avg_death_overs_runs" name="Avg death-overs runs (overs 16-20)" fill="#f59e0b" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <h2 className="text-xl font-semibold text-gray-900 mt-10 mb-3">Team head-to-head</h2>
+      <div className="flex gap-3 flex-wrap items-center">
+        <TeamSelect label="Team A" value={teamA} onChange={setTeamA} teams={teams} />
+        <span className="text-gray-400">vs</span>
+        <TeamSelect label="Team B" value={teamB} onChange={setTeamB} teams={teams} />
+      </div>
+
+      {teamA && teamB && teamA !== teamB && (
+        <div className="mt-4 bg-white border border-gray-200 rounded-xl p-5">
+          {record ? (
+            <div>
+              <div className="text-sm text-gray-500">{record.matches_played} matches played</div>
+              <div className="mt-3 grid grid-cols-2 gap-4">
+                <TeamWinBox
+                  name={record.team_a}
+                  wins={record.team_a_wins}
+                  highlight={record.team_a === teamA}
+                />
+                <TeamWinBox
+                  name={record.team_b}
+                  wins={record.team_b_wins}
+                  highlight={record.team_b === teamA}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="text-gray-400">No matches found between these teams.</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function LeaderboardCard({ title, subtitle, columns, rows }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-4">
+      <div className="flex items-baseline justify-between mb-2">
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        <span className="text-xs text-gray-400">{subtitle}</span>
+      </div>
+      <table className="w-full text-sm">
+        <thead className="text-gray-400">
+          <tr>
+            {columns.map((c) => (
+              <th
+                key={c.key}
+                className={`py-1.5 font-medium ${c.align === 'left' ? 'text-left' : 'text-right'}`}
+              >
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={row.batter || row.bowler} className="border-t border-gray-100">
+              {columns.map((c) => (
+                <td
+                  key={c.key}
+                  className={`py-1.5 ${c.align === 'left' ? 'text-left font-medium text-gray-900' : 'text-right text-gray-700'}`}
+                >
+                  {i === 0 && c.align === 'left' ? '🏆 ' : ''}
+                  {row[c.key]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function TeamSelect({ label, value, onChange, teams }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+    >
+      <option value="">{label}</option>
+      {teams.map((t) => (
+        <option key={t} value={t}>
+          {t}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+function TeamWinBox({ name, wins, highlight }) {
+  return (
+    <div className={`rounded-lg p-3 ${highlight ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
+      <div className="text-xs uppercase tracking-wide opacity-70">{name}</div>
+      <div className="text-2xl font-semibold mt-1">{wins} wins</div>
+    </div>
+  )
+}
