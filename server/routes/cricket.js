@@ -89,13 +89,15 @@ router.get('/head-to-head', async (req, res) => {
   res.json(rows)
 })
 
-// GET /api/cricket/phase-breakdown - powerplay vs death-overs scoring by team
+// GET /api/cricket/phase-breakdown - powerplay vs death-overs scoring rate by team
+// (per-over rate, not raw totals - powerplay is 6 overs, death-overs is 5, so totals alone
+// aren't comparable)
 router.get('/phase-breakdown', async (req, res) => {
   const { rows } = await pool.query(`
     SELECT
         batting_team,
-        ROUND(AVG(pp_runs), 2) AS avg_powerplay_runs,
-        ROUND(AVG(death_runs), 2) AS avg_death_overs_runs
+        ROUND(AVG(pp_runs) / 6, 2) AS powerplay_run_rate,
+        ROUND(AVG(death_runs) / 5, 2) AS death_overs_run_rate
     FROM (
         SELECT match_id, inning, batting_team,
             SUM(CASE WHEN over <= 5 THEN total_runs ELSE 0 END) AS pp_runs,
@@ -104,7 +106,7 @@ router.get('/phase-breakdown', async (req, res) => {
         GROUP BY match_id, inning, batting_team
     ) innings_splits
     GROUP BY batting_team
-    ORDER BY avg_powerplay_runs DESC
+    ORDER BY death_overs_run_rate DESC
   `)
   res.json(rows)
 })

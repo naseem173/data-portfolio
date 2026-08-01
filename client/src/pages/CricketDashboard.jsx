@@ -73,9 +73,13 @@ export default function CricketDashboard() {
         />
       </div>
 
-      <h2 className="text-xl font-semibold text-gray-900 mt-10 mb-3">
-        Powerplay vs. death-overs scoring by team
+      <h2 className="text-xl font-semibold text-gray-900 mt-10 mb-1">
+        Powerplay vs. death-overs scoring rate by team
       </h2>
+      <p className="text-sm text-gray-500 mb-3">
+        Runs per over, not raw totals — powerplay is 6 overs, death-overs is 5, so totals alone
+        aren't comparable.
+      </p>
       <div className="bg-white border border-gray-200 rounded-xl p-4 h-80">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={phaseBreakdown} margin={{ bottom: 40 }}>
@@ -90,8 +94,8 @@ export default function CricketDashboard() {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="avg_powerplay_runs" name="Avg powerplay runs (overs 1-6)" fill="#3b82f6" />
-            <Bar dataKey="avg_death_overs_runs" name="Avg death-overs runs (overs 16-20)" fill="#f59e0b" />
+            <Bar dataKey="powerplay_run_rate" name="Powerplay run rate (overs 1-6)" fill="#3b82f6" />
+            <Bar dataKey="death_overs_run_rate" name="Death-overs run rate (overs 16-20)" fill="#f59e0b" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -126,6 +130,62 @@ export default function CricketDashboard() {
           )}
         </div>
       )}
+
+      <HowItsBuilt />
+    </div>
+  )
+}
+
+function HowItsBuilt() {
+  return (
+    <div className="mt-10 bg-gray-50 border border-gray-200 rounded-xl p-5">
+      <h2 className="text-lg font-semibold text-gray-900 mb-3">How this was built</h2>
+      <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-600">
+        <div>
+          <div className="font-medium text-gray-900">Problem</div>
+          <p className="mt-1">
+            Raw ball-by-ball cricket data is deeply nested (match → innings → over → delivery) and
+            not directly queryable. Turn it into player and team insights.
+          </p>
+        </div>
+        <div>
+          <div className="font-medium text-gray-900">Data</div>
+          <p className="mt-1">
+            1,243 IPL matches, ~296k deliveries, from the free{' '}
+            <a href="https://cricsheet.org" target="_blank" rel="noreferrer" className="underline">
+              cricsheet.org
+            </a>{' '}
+            JSON dataset — no API key required.
+          </p>
+        </div>
+        <div>
+          <div className="font-medium text-gray-900">Python</div>
+          <p className="mt-1">
+            A parser flattens each match's nested JSON (innings → overs → deliveries) into two
+            relational tables — <code className="bg-white px-1 rounded border border-gray-200">matches</code> and{' '}
+            <code className="bg-white px-1 rounded border border-gray-200">deliveries</code> — then
+            bulk-loads them with Postgres <code className="bg-white px-1 rounded border border-gray-200">COPY</code>.
+          </p>
+        </div>
+        <div>
+          <div className="font-medium text-gray-900">SQL</div>
+          <p className="mt-1">
+            Conditional aggregation (<code className="bg-white px-1 rounded border border-gray-200">FILTER WHERE</code>) builds
+            batting/bowling leaderboards from one flat delivery table; a windowed running{' '}
+            <code className="bg-white px-1 rounded border border-gray-200">SUM() OVER</code> of
+            wickets-so-far segments each innings into wicket partnerships.
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="font-medium text-gray-900 text-sm">Key insight</div>
+        <p className="mt-1 text-sm text-gray-600">
+          Normalizing both phases to a per-over rate, most teams actually score faster in the
+          death overs than the powerplay, despite the fielding restrictions favoring the
+          batting side early on — the late-innings willingness to take risks outweighs the
+          powerplay's fielding advantage.
+        </p>
+      </div>
     </div>
   )
 }

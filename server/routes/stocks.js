@@ -107,4 +107,12 @@ router.get('/:symbol/live', async (req, res) => {
   }
 })
 
+// GET /api/stocks/correlations - pairwise return correlations (computed in Python)
+router.get('/correlations', async (req, res) => {
+  const { rows } = await pool.query(
+    'SELECT symbol_a, symbol_b, correlation FROM stock_correlations ORDER BY symbol_a, symbol_b'
+  )
+  res.json(rows)
+})
+
 export default router

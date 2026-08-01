@@ -85,11 +85,12 @@ FROM matches
 GROUP BY team_a, team_b
 ORDER BY matches_played DESC;
 
--- 5. Powerplay (overs 1-6) vs death-overs (overs 16-20) scoring rate by team
+-- 5. Powerplay (overs 1-6) vs death-overs (overs 16-20) scoring RATE by team
+-- (per-over rate, not raw totals - powerplay is 6 overs, death-overs is 5)
 SELECT
     batting_team,
-    ROUND(AVG(pp_runs), 2) AS avg_powerplay_runs,
-    ROUND(AVG(death_runs), 2) AS avg_death_overs_runs
+    ROUND(AVG(pp_runs) / 6, 2) AS powerplay_run_rate,
+    ROUND(AVG(death_runs) / 5, 2) AS death_overs_run_rate
 FROM (
     SELECT
         match_id,
@@ -101,7 +102,7 @@ FROM (
     GROUP BY match_id, inning, batting_team
 ) innings_splits
 GROUP BY batting_team
-ORDER BY avg_powerplay_runs DESC;
+ORDER BY death_overs_run_rate DESC;
 
 -- 6. Season-by-season run totals for a given player (ranked within each season)
 SELECT

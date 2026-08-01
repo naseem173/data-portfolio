@@ -17,3 +17,12 @@ CREATE TABLE IF NOT EXISTS daily_prices (
 );
 
 CREATE INDEX IF NOT EXISTS idx_daily_prices_date ON daily_prices (trade_date);
+
+-- Populated by python-analysis/stocks/correlation_analysis.py (pandas/numpy),
+-- not derivable from a single SQL query - this is the Python-modeling layer.
+CREATE TABLE IF NOT EXISTS stock_correlations (
+    symbol_a     TEXT NOT NULL REFERENCES symbols(symbol),
+    symbol_b     TEXT NOT NULL REFERENCES symbols(symbol),
+    correlation  NUMERIC(5, 4) NOT NULL,
+    PRIMARY KEY (symbol_a, symbol_b)
+);

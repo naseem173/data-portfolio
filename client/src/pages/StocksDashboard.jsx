@@ -21,6 +21,20 @@ function fmtPrice(symbol, value) {
   return `${currencySymbol(symbol)}${Number(value).toFixed(2)}`
 }
 
+// Diverging scale: red (-1) -> neutral gray (0) -> blue (+1)
+function corrColor(value) {
+  const v = Math.max(-1, Math.min(1, value))
+  const neutral = [240, 239, 236]
+  const pole = v >= 0 ? [37, 106, 191] : [227, 73, 72]
+  const t = Math.abs(v)
+  const rgb = neutral.map((n, i) => Math.round(n + (pole[i] - n) * t))
+  return `rgb(${rgb.join(',')})`
+}
+
+function corrTextColor(value) {
+  return Math.abs(value) > 0.55 ? '#ffffff' : '#0b0b0b'
+}
+
 export default function StocksDashboard() {
   const [symbols, setSymbols] = useState([])
   const [rankings, setRankings] = useState([])
@@ -28,10 +42,12 @@ export default function StocksDashboard() {
   const [analysis, setAnalysis] = useState([])
   const [loading, setLoading] = useState(true)
   const [live, setLive] = useState(null)
+  const [correlations, setCorrelations] = useState([])
 
   useEffect(() => {
     api.get('/api/stocks/symbols').then((res) => setSymbols(res.data))
     api.get('/api/stocks/rankings').then((res) => setRankings(res.data))
+    api.get('/api/stocks/correlations').then((res) => setCorrelations(res.data))
   }, [])
 
   useEffect(() => {
@@ -146,6 +162,124 @@ export default function StocksDashboard() {
           ))}
         </tbody>
       </table>
+
+      <h2 className="text-xl font-semibold text-gray-900 mt-10 mb-1">
+        Return correlation across stocks
+      </h2>
+      <p className="text-sm text-gray-500 mb-3">
+        Computed in Python (pandas <code className="bg-gray-100 px-1 rounded">.corr()</code> over
+        daily returns) — genuinely simpler than SQL for a full pairwise matrix, then written back
+        to Postgres for the API to serve.
+      </p>
+      <CorrelationHeatmap data={correlations} symbols={symbols.map((s) => s.symbol)} />
+
+      <HowItsBuilt />
+    </div>
+  )
+}
+
+function CorrelationHeatmap({ data, symbols }) {
+  if (symbols.length === 0) return null
+  const lookup = new Map(data.map((d) => [`${d.symbol_a}|${d.symbol_b}`, Number(d.correlation)]))
+  const short = (s) => s.replace('.NS', '')
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-4 overflow-x-auto">
+      <table className="text-xs border-collapse">
+        <thead>
+          <tr>
+            <th className="w-20" />
+            {symbols.map((s) => (
+              <th key={s} className="px-1 py-1 font-medium text-gray-500 text-center">
+                {short(s)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {symbols.map((rowSym) => (
+            <tr key={rowSym}>
+              <th className="pr-2 py-1 font-medium text-gray-500 text-right whitespace-nowrap">
+                {short(rowSym)}
+              </th>
+              {symbols.map((colSym) => {
+                const v = lookup.get(`${rowSym}|${colSym}`)
+                if (v === undefined) return <td key={colSym} className="w-9 h-9" />
+                return (
+                  <td
+                    key={colSym}
+                    title={`${short(rowSym)} vs ${short(colSym)}: ${v.toFixed(2)}`}
+                    className="w-9 h-9 text-center align-middle"
+                    style={{ backgroundColor: corrColor(v), color: corrTextColor(v) }}
+                  >
+                    {v.toFixed(1)}
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="flex items-center gap-2 mt-4 text-xs text-gray-500">
+        <span>-1</span>
+        <div
+          className="h-2 w-40 rounded-full"
+          style={{ background: 'linear-gradient(to right, rgb(227,73,72), rgb(240,239,236), rgb(37,106,191))' }}
+        />
+        <span>+1</span>
+        <span className="ml-2">correlation of daily returns</span>
+      </div>
+    </div>
+  )
+}
+
+function HowItsBuilt() {
+  return (
+    <div className="mt-10 bg-gray-50 border border-gray-200 rounded-xl p-5">
+      <h2 className="text-lg font-semibold text-gray-900 mb-3">How this was built</h2>
+      <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-600">
+        <div>
+          <div className="font-medium text-gray-900">Problem</div>
+          <p className="mt-1">
+            Track and compare Indian large-cap stocks across sectors — historical performance,
+            risk, and what's happening right now — in one place.
+          </p>
+        </div>
+        <div>
+          <div className="font-medium text-gray-900">Data</div>
+          <p className="mt-1">
+            5 years of daily OHLCV for 12 NSE stocks (plus 5 US stocks for comparison) via{' '}
+            <code className="bg-white px-1 rounded border border-gray-200">yfinance</code>, and
+            live quotes via a Yahoo Finance quote endpoint.
+          </p>
+        </div>
+        <div>
+          <div className="font-medium text-gray-900">SQL</div>
+          <p className="mt-1">
+            Window functions do the heavy lifting: <code className="bg-white px-1 rounded border border-gray-200">LAG()</code> for
+            daily returns, moving <code className="bg-white px-1 rounded border border-gray-200">AVG() OVER (ROWS BETWEEN…)</code>,{' '}
+            <code className="bg-white px-1 rounded border border-gray-200">STDDEV() OVER</code> for
+            rolling volatility, and <code className="bg-white px-1 rounded border border-gray-200">RANK()</code> for
+            cross-symbol return ranking.
+          </p>
+        </div>
+        <div>
+          <div className="font-medium text-gray-900">Python</div>
+          <p className="mt-1">
+            pandas pivots the price history into a date × symbol matrix and computes the full
+            correlation matrix in one <code className="bg-white px-1 rounded border border-gray-200">.corr()</code> call
+            — the kind of matrix operation that's awkward in SQL but trivial in pandas.
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="font-medium text-gray-900 text-sm">Key insight</div>
+        <p className="mt-1 text-sm text-gray-600">
+          The two IT-services stocks (Infosys, TCS) move together far more than either does with
+          banking or energy names — a reminder that "diversified" only holds if the picks are
+          actually uncorrelated, not just different tickers.
+        </p>
+      </div>
     </div>
   )
 }
