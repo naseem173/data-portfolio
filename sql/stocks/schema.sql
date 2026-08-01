@@ -1,0 +1,2 @@
+-- Stock market analytics schema (to be filled in together)
+-- Tables planned: symbols, daily_prices

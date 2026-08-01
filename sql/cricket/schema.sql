@@ -1,0 +1,2 @@
+-- Cricket analytics schema (to be filled in together)
+-- Tables planned: matches, teams, players, innings, deliveries
