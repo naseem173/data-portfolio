@@ -9,7 +9,11 @@ function App() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <nav className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
-          <Link to="/" className="font-semibold text-gray-900 dark:text-gray-100">
+          <Link to="/" className="flex items-center gap-2 font-bold text-gray-900 dark:text-gray-100">
+            <span
+              className="w-6 h-6 rounded-lg"
+              style={{ background: 'linear-gradient(135deg, #2a78d6, #4a3aa7)' }}
+            />
             data-portfolio
           </Link>
           <ThemeToggle />

@@ -91,7 +91,9 @@ export default function StocksDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100">Indian Stock Market Analytics</h1>
+      <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+        Indian Stock Market <span style={{ color: isDark ? '#3987e5' : '#2a78d6' }}>Analytics</span>
+      </h1>
       <p className="text-gray-500 dark:text-gray-400 mt-1">
         5 years of NSE daily price data, PostgreSQL window-function analysis, live quotes — Postgres → Express → React.
       </p>
@@ -103,20 +105,23 @@ export default function StocksDashboard() {
 
       {latest && (
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Stat label="Latest close" value={fmtPrice(selected, latest.close)} />
+          <Stat label="Latest close" value={fmtPrice(selected, latest.close)} accent="#2a78d6" />
           <Stat
             label="Daily return"
             value={latest.daily_return_pct ? `${Number(latest.daily_return_pct).toFixed(2)}%` : '—'}
+            accent="#eb6834"
           />
-          <Stat label="20-day MA" value={fmtPrice(selected, latest.ma_20)} />
+          <Stat label="20-day MA" value={fmtPrice(selected, latest.ma_20)} accent="#1baf7a" />
           <Stat
             label="30d volatility"
             value={latest.rolling_30d_volatility_pct ? `${Number(latest.rolling_30d_volatility_pct).toFixed(2)}%` : '—'}
+            accent="#4a3aa7"
           />
         </div>
       )}
 
-      <div className="mt-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 h-96">
+      <SectionHeading color="#2a78d6">Price history &amp; moving averages</SectionHeading>
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 h-96">
         {loading ? (
           <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">Loading…</div>
         ) : (
@@ -152,9 +157,7 @@ export default function StocksDashboard() {
         )}
       </div>
 
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-10 mb-3">
-        Total return ranking (full history loaded)
-      </h2>
+      <SectionHeading color="#eb6834">Total return ranking (full history loaded)</SectionHeading>
       <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
         <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
           <tr>
@@ -186,10 +189,8 @@ export default function StocksDashboard() {
         </tbody>
       </table>
 
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-10 mb-1">
-        Return correlation across stocks
-      </h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+      <SectionHeading color="#4a3aa7">Return correlation across stocks</SectionHeading>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 -mt-2">
         Computed in Python (pandas{' '}
         <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">.corr()</code> over daily
         returns) — genuinely simpler than SQL for a full pairwise matrix, then written back to
@@ -199,6 +200,15 @@ export default function StocksDashboard() {
 
       <HowItsBuilt />
     </div>
+  )
+}
+
+function SectionHeading({ color, children }) {
+  return (
+    <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100 mt-10 mb-3">
+      <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: color }} />
+      {children}
+    </h2>
   )
 }
 
@@ -265,17 +275,17 @@ function HowItsBuilt() {
   const codeClass = 'bg-white dark:bg-gray-900 px-1 rounded border border-gray-200 dark:border-gray-700'
   return (
     <div className="mt-10 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">How this was built</h2>
+      <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-3">How this was built</h2>
       <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
         <div>
-          <div className="font-medium text-gray-900 dark:text-gray-100">Problem</div>
+          <Label color="#2a78d6">Problem</Label>
           <p className="mt-1">
             Track and compare Indian large-cap stocks across sectors — historical performance,
             risk, and what's happening right now — in one place.
           </p>
         </div>
         <div>
-          <div className="font-medium text-gray-900 dark:text-gray-100">Data</div>
+          <Label color="#eb6834">Data</Label>
           <p className="mt-1">
             5 years of daily OHLCV for 12 NSE stocks (plus 5 US stocks for comparison) via{' '}
             <code className={codeClass}>yfinance</code>, and live quotes via a Yahoo Finance quote
@@ -283,7 +293,7 @@ function HowItsBuilt() {
           </p>
         </div>
         <div>
-          <div className="font-medium text-gray-900 dark:text-gray-100">SQL</div>
+          <Label color="#4a3aa7">SQL</Label>
           <p className="mt-1">
             Window functions do the heavy lifting: <code className={codeClass}>LAG()</code> for
             daily returns, moving <code className={codeClass}>AVG() OVER (ROWS BETWEEN…)</code>,{' '}
@@ -292,7 +302,7 @@ function HowItsBuilt() {
           </p>
         </div>
         <div>
-          <div className="font-medium text-gray-900 dark:text-gray-100">Python</div>
+          <Label color="#1baf7a">Python</Label>
           <p className="mt-1">
             pandas pivots the price history into a date × symbol matrix and computes the full
             correlation matrix in one <code className={codeClass}>.corr()</code> call — the kind
@@ -301,13 +311,22 @@ function HowItsBuilt() {
         </div>
       </div>
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">Key insight</div>
+        <Label color="#e87ba4">Key insight</Label>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
           The two IT-services stocks (Infosys, TCS) move together far more than either does with
           banking or energy names — a reminder that "diversified" only holds if the picks are
           actually uncorrelated, not just different tickers.
         </p>
       </div>
+    </div>
+  )
+}
+
+function Label({ color, children }) {
+  return (
+    <div className="flex items-center gap-1.5 font-semibold text-gray-900 dark:text-gray-100">
+      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+      {children}
     </div>
   )
 }
@@ -322,11 +341,16 @@ function TickerGroup({ label, tickers, selected, onSelect }) {
           <button
             key={s.symbol}
             onClick={() => onSelect(s.symbol)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${
+            className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition ${
               selected === s.symbol
-                ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-900 dark:border-gray-100'
+                ? 'text-white border-transparent shadow-sm'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
             }`}
+            style={
+              selected === s.symbol
+                ? { background: 'linear-gradient(135deg, #2a78d6, #4a3aa7)' }
+                : undefined
+            }
           >
             {s.symbol.replace('.NS', '')}
           </button>
@@ -338,8 +362,12 @@ function TickerGroup({ label, tickers, selected, onSelect }) {
 
 function LivePriceCard({ symbol, live }) {
   const isUp = live && !live.error && live.change >= 0
+  const accent = live && !live.error ? (isUp ? '#1baf7a' : '#e34948') : '#9ca3af'
   return (
-    <div className="mt-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center justify-between">
+    <div
+      className="mt-6 bg-white dark:bg-gray-800 border-l-4 border-y border-r border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center justify-between"
+      style={{ borderLeftColor: accent }}
+    >
       <div>
         <div className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -374,11 +402,14 @@ function LivePriceCard({ symbol, live }) {
   )
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, accent }) {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+    <div
+      className="bg-white dark:bg-gray-800 border-t-4 border-x border-b border-gray-200 dark:border-gray-700 rounded-xl p-4"
+      style={{ borderTopColor: accent }}
+    >
       <div className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">{label}</div>
-      <div className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">{value}</div>
+      <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">{value}</div>
     </div>
   )
 }
