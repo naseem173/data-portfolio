@@ -10,6 +10,7 @@ import {
   Legend,
 } from 'recharts'
 import { api } from '../api/client'
+import { useTheme } from '../theme/ThemeContext.jsx'
 
 const LIVE_POLL_MS = 15_000
 
@@ -22,20 +23,23 @@ function fmtPrice(symbol, value) {
 }
 
 // Diverging scale: red (-1) -> neutral gray (0) -> blue (+1)
-function corrColor(value) {
+function corrColor(value, isDark) {
   const v = Math.max(-1, Math.min(1, value))
-  const neutral = [240, 239, 236]
+  const neutral = isDark ? [56, 56, 53] : [240, 239, 236]
   const pole = v >= 0 ? [37, 106, 191] : [227, 73, 72]
   const t = Math.abs(v)
   const rgb = neutral.map((n, i) => Math.round(n + (pole[i] - n) * t))
   return `rgb(${rgb.join(',')})`
 }
 
-function corrTextColor(value) {
+function corrTextColor(value, isDark) {
+  if (isDark) return '#f3f4f6'
   return Math.abs(value) > 0.55 ? '#ffffff' : '#0b0b0b'
 }
 
 export default function StocksDashboard() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [symbols, setSymbols] = useState([])
   const [rankings, setRankings] = useState([])
   const [selected, setSelected] = useState('RELIANCE.NS')
@@ -87,8 +91,8 @@ export default function StocksDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-semibold text-gray-900">Indian Stock Market Analytics</h1>
-      <p className="text-gray-500 mt-1">
+      <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100">Indian Stock Market Analytics</h1>
+      <p className="text-gray-500 dark:text-gray-400 mt-1">
         5 years of NSE daily price data, PostgreSQL window-function analysis, live quotes — Postgres → Express → React.
       </p>
 
@@ -112,18 +116,35 @@ export default function StocksDashboard() {
         </div>
       )}
 
-      <div className="mt-8 bg-white border border-gray-200 rounded-xl p-4 h-96">
+      <div className="mt-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 h-96">
         {loading ? (
-          <div className="h-full flex items-center justify-center text-gray-400">Loading…</div>
+          <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">Loading…</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={analysis}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-              <XAxis dataKey="trade_date" tickFormatter={(d) => d.slice(0, 7)} minTickGap={40} />
-              <YAxis domain={['auto', 'auto']} />
-              <Tooltip labelFormatter={(d) => d.slice(0, 10)} />
-              <Legend />
-              <Line type="monotone" dataKey="close" stroke="#111827" dot={false} name="Close" />
+              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#eee'} />
+              <XAxis
+                dataKey="trade_date"
+                tickFormatter={(d) => d.slice(0, 7)}
+                minTickGap={40}
+                tick={{ fill: isDark ? '#9ca3af' : '#6b7280' }}
+                stroke={isDark ? '#4b5563' : '#d1d5db'}
+              />
+              <YAxis
+                domain={['auto', 'auto']}
+                tick={{ fill: isDark ? '#9ca3af' : '#6b7280' }}
+                stroke={isDark ? '#4b5563' : '#d1d5db'}
+              />
+              <Tooltip
+                labelFormatter={(d) => d.slice(0, 10)}
+                contentStyle={
+                  isDark
+                    ? { backgroundColor: '#1f2937', border: '1px solid #374151', color: '#f3f4f6' }
+                    : undefined
+                }
+              />
+              <Legend wrapperStyle={{ color: isDark ? '#d1d5db' : undefined }} />
+              <Line type="monotone" dataKey="close" stroke={isDark ? '#e5e7eb' : '#111827'} dot={false} name="Close" />
               <Line type="monotone" dataKey="ma_20" stroke="#3b82f6" dot={false} name="MA 20" />
               <Line type="monotone" dataKey="ma_50" stroke="#f59e0b" dot={false} name="MA 50" />
             </LineChart>
@@ -131,11 +152,11 @@ export default function StocksDashboard() {
         )}
       </div>
 
-      <h2 className="text-xl font-semibold text-gray-900 mt-10 mb-3">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-10 mb-3">
         Total return ranking (full history loaded)
       </h2>
-      <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
-        <thead className="bg-gray-50 text-gray-500">
+      <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
           <tr>
             <th className="text-left px-4 py-2">Rank</th>
             <th className="text-left px-4 py-2">Symbol</th>
@@ -144,16 +165,18 @@ export default function StocksDashboard() {
             <th className="text-right px-4 py-2">Total return</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="bg-white dark:bg-gray-900">
           {rankings.map((r) => (
-            <tr key={r.symbol} className="border-t border-gray-100">
+            <tr key={r.symbol} className="border-t border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300">
               <td className="px-4 py-2">{r.return_rank}</td>
-              <td className="px-4 py-2 font-medium">{r.symbol}</td>
+              <td className="px-4 py-2 font-medium text-gray-900 dark:text-gray-100">{r.symbol}</td>
               <td className="px-4 py-2 text-right">{fmtPrice(r.symbol, r.first_close)}</td>
               <td className="px-4 py-2 text-right">{fmtPrice(r.symbol, r.last_close)}</td>
               <td
                 className={`px-4 py-2 text-right font-medium ${
-                  Number(r.total_return_pct) >= 0 ? 'text-green-600' : 'text-red-600'
+                  Number(r.total_return_pct) >= 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
                 }`}
               >
                 {Number(r.total_return_pct).toFixed(2)}%
@@ -163,34 +186,35 @@ export default function StocksDashboard() {
         </tbody>
       </table>
 
-      <h2 className="text-xl font-semibold text-gray-900 mt-10 mb-1">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-10 mb-1">
         Return correlation across stocks
       </h2>
-      <p className="text-sm text-gray-500 mb-3">
-        Computed in Python (pandas <code className="bg-gray-100 px-1 rounded">.corr()</code> over
-        daily returns) — genuinely simpler than SQL for a full pairwise matrix, then written back
-        to Postgres for the API to serve.
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+        Computed in Python (pandas{' '}
+        <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">.corr()</code> over daily
+        returns) — genuinely simpler than SQL for a full pairwise matrix, then written back to
+        Postgres for the API to serve.
       </p>
-      <CorrelationHeatmap data={correlations} symbols={symbols.map((s) => s.symbol)} />
+      <CorrelationHeatmap data={correlations} symbols={symbols.map((s) => s.symbol)} isDark={isDark} />
 
       <HowItsBuilt />
     </div>
   )
 }
 
-function CorrelationHeatmap({ data, symbols }) {
+function CorrelationHeatmap({ data, symbols, isDark }) {
   if (symbols.length === 0) return null
   const lookup = new Map(data.map((d) => [`${d.symbol_a}|${d.symbol_b}`, Number(d.correlation)]))
   const short = (s) => s.replace('.NS', '')
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4 overflow-x-auto">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 overflow-x-auto">
       <table className="text-xs border-collapse">
         <thead>
           <tr>
             <th className="w-20" />
             {symbols.map((s) => (
-              <th key={s} className="px-1 py-1 font-medium text-gray-500 text-center">
+              <th key={s} className="px-1 py-1 font-medium text-gray-500 dark:text-gray-400 text-center">
                 {short(s)}
               </th>
             ))}
@@ -199,7 +223,7 @@ function CorrelationHeatmap({ data, symbols }) {
         <tbody>
           {symbols.map((rowSym) => (
             <tr key={rowSym}>
-              <th className="pr-2 py-1 font-medium text-gray-500 text-right whitespace-nowrap">
+              <th className="pr-2 py-1 font-medium text-gray-500 dark:text-gray-400 text-right whitespace-nowrap">
                 {short(rowSym)}
               </th>
               {symbols.map((colSym) => {
@@ -210,7 +234,7 @@ function CorrelationHeatmap({ data, symbols }) {
                     key={colSym}
                     title={`${short(rowSym)} vs ${short(colSym)}: ${v.toFixed(2)}`}
                     className="w-9 h-9 text-center align-middle"
-                    style={{ backgroundColor: corrColor(v), color: corrTextColor(v) }}
+                    style={{ backgroundColor: corrColor(v, isDark), color: corrTextColor(v, isDark) }}
                   >
                     {v.toFixed(1)}
                   </td>
@@ -220,11 +244,15 @@ function CorrelationHeatmap({ data, symbols }) {
           ))}
         </tbody>
       </table>
-      <div className="flex items-center gap-2 mt-4 text-xs text-gray-500">
+      <div className="flex items-center gap-2 mt-4 text-xs text-gray-500 dark:text-gray-400">
         <span>-1</span>
         <div
           className="h-2 w-40 rounded-full"
-          style={{ background: 'linear-gradient(to right, rgb(227,73,72), rgb(240,239,236), rgb(37,106,191))' }}
+          style={{
+            background: `linear-gradient(to right, rgb(227,73,72), ${
+              isDark ? 'rgb(56,56,53)' : 'rgb(240,239,236)'
+            }, rgb(37,106,191))`,
+          }}
         />
         <span>+1</span>
         <span className="ml-2">correlation of daily returns</span>
@@ -234,47 +262,47 @@ function CorrelationHeatmap({ data, symbols }) {
 }
 
 function HowItsBuilt() {
+  const codeClass = 'bg-white dark:bg-gray-900 px-1 rounded border border-gray-200 dark:border-gray-700'
   return (
-    <div className="mt-10 bg-gray-50 border border-gray-200 rounded-xl p-5">
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">How this was built</h2>
-      <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-600">
+    <div className="mt-10 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">How this was built</h2>
+      <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
         <div>
-          <div className="font-medium text-gray-900">Problem</div>
+          <div className="font-medium text-gray-900 dark:text-gray-100">Problem</div>
           <p className="mt-1">
             Track and compare Indian large-cap stocks across sectors — historical performance,
             risk, and what's happening right now — in one place.
           </p>
         </div>
         <div>
-          <div className="font-medium text-gray-900">Data</div>
+          <div className="font-medium text-gray-900 dark:text-gray-100">Data</div>
           <p className="mt-1">
             5 years of daily OHLCV for 12 NSE stocks (plus 5 US stocks for comparison) via{' '}
-            <code className="bg-white px-1 rounded border border-gray-200">yfinance</code>, and
-            live quotes via a Yahoo Finance quote endpoint.
+            <code className={codeClass}>yfinance</code>, and live quotes via a Yahoo Finance quote
+            endpoint.
           </p>
         </div>
         <div>
-          <div className="font-medium text-gray-900">SQL</div>
+          <div className="font-medium text-gray-900 dark:text-gray-100">SQL</div>
           <p className="mt-1">
-            Window functions do the heavy lifting: <code className="bg-white px-1 rounded border border-gray-200">LAG()</code> for
-            daily returns, moving <code className="bg-white px-1 rounded border border-gray-200">AVG() OVER (ROWS BETWEEN…)</code>,{' '}
-            <code className="bg-white px-1 rounded border border-gray-200">STDDEV() OVER</code> for
-            rolling volatility, and <code className="bg-white px-1 rounded border border-gray-200">RANK()</code> for
-            cross-symbol return ranking.
+            Window functions do the heavy lifting: <code className={codeClass}>LAG()</code> for
+            daily returns, moving <code className={codeClass}>AVG() OVER (ROWS BETWEEN…)</code>,{' '}
+            <code className={codeClass}>STDDEV() OVER</code> for rolling volatility, and{' '}
+            <code className={codeClass}>RANK()</code> for cross-symbol return ranking.
           </p>
         </div>
         <div>
-          <div className="font-medium text-gray-900">Python</div>
+          <div className="font-medium text-gray-900 dark:text-gray-100">Python</div>
           <p className="mt-1">
             pandas pivots the price history into a date × symbol matrix and computes the full
-            correlation matrix in one <code className="bg-white px-1 rounded border border-gray-200">.corr()</code> call
-            — the kind of matrix operation that's awkward in SQL but trivial in pandas.
+            correlation matrix in one <code className={codeClass}>.corr()</code> call — the kind
+            of matrix operation that's awkward in SQL but trivial in pandas.
           </p>
         </div>
       </div>
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="font-medium text-gray-900 text-sm">Key insight</div>
-        <p className="mt-1 text-sm text-gray-600">
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">Key insight</div>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
           The two IT-services stocks (Infosys, TCS) move together far more than either does with
           banking or energy names — a reminder that "diversified" only holds if the picks are
           actually uncorrelated, not just different tickers.
@@ -288,7 +316,7 @@ function TickerGroup({ label, tickers, selected, onSelect }) {
   if (tickers.length === 0) return null
   return (
     <div className="mt-4 first:mt-6">
-      <div className="text-xs uppercase tracking-wide text-gray-400 mb-1.5">{label}</div>
+      <div className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1.5">{label}</div>
       <div className="flex gap-2 flex-wrap">
         {tickers.map((s) => (
           <button
@@ -296,8 +324,8 @@ function TickerGroup({ label, tickers, selected, onSelect }) {
             onClick={() => onSelect(s.symbol)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${
               selected === s.symbol
-                ? 'bg-gray-900 text-white border-gray-900'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-900 dark:border-gray-100'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
             }`}
           >
             {s.symbol.replace('.NS', '')}
@@ -311,29 +339,33 @@ function TickerGroup({ label, tickers, selected, onSelect }) {
 function LivePriceCard({ symbol, live }) {
   const isUp = live && !live.error && live.change >= 0
   return (
-    <div className="mt-6 bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+    <div className="mt-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center justify-between">
       <div>
-        <div className="text-xs uppercase tracking-wide text-gray-400 flex items-center gap-1.5">
+        <div className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
           Live price · {symbol}
         </div>
         {live && !live.error ? (
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-semibold text-gray-900">
+            <span className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               {currencySymbol(symbol)}
               {Number(live.price).toFixed(2)}
             </span>
-            <span className={`text-sm font-medium ${isUp ? 'text-green-600' : 'text-red-600'}`}>
+            <span
+              className={`text-sm font-medium ${
+                isUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              }`}
+            >
               {isUp ? '+' : ''}
               {Number(live.change).toFixed(2)} ({Number(live.changePercent).toFixed(2)}%)
             </span>
           </div>
         ) : (
-          <div className="text-gray-400 mt-1">Fetching live quote…</div>
+          <div className="text-gray-400 dark:text-gray-500 mt-1">Fetching live quote…</div>
         )}
       </div>
       {live && !live.error && (
-        <div className="text-right text-xs text-gray-400">
+        <div className="text-right text-xs text-gray-400 dark:text-gray-500">
           <div>{live.marketState === 'REGULAR' ? 'Market open' : 'Market closed'}</div>
           <div>as of {new Date(live.asOf).toLocaleTimeString()}</div>
         </div>
@@ -344,9 +376,9 @@ function LivePriceCard({ symbol, live }) {
 
 function Stat({ label, value }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4">
-      <div className="text-xs uppercase tracking-wide text-gray-400">{label}</div>
-      <div className="text-xl font-semibold text-gray-900 mt-1">{value}</div>
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+      <div className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">{label}</div>
+      <div className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">{value}</div>
     </div>
   )
 }
