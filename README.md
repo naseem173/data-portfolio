@@ -3,10 +3,12 @@
 A full-stack data analyst portfolio built on the MERN stack, showcasing heavy SQL and Python
 analysis work through two flagship, end-to-end case studies:
 
-1. **Cricket Analytics** — relational match/player/innings data, SQL aggregation-heavy queries,
-   Python-based stats modeling, interactive React dashboard.
-2. **Stock Market Analytics** — time-series price data, SQL window-function analysis,
-   Python technical indicators & backtesting, interactive React dashboard with charts.
+1. **Indian Stock Market Analytics** — 5 years of NSE daily price data (plus a few US stocks for
+   comparison), SQL window-function analysis (returns, moving averages, volatility, rankings),
+   live price quotes, interactive React dashboard.
+2. **Cricket Analytics** — ~296k ball-by-ball IPL deliveries across 1,243 matches, SQL
+   aggregation-heavy batting/bowling leaderboards, partnership and phase (powerplay/death-overs)
+   breakdowns, team head-to-head records, interactive React dashboard.
 
 See [docs/PLAN.md](docs/PLAN.md) for the full architecture, tech stack, and roadmap.
 
@@ -24,6 +26,15 @@ python-analysis/
 docs/               Planning docs, architecture notes, write-ups
 ```
 
+## Running locally
+
+1. Postgres running with a `data_portfolio` database (`brew services start postgresql@16`)
+2. `server/`: `npm install`, copy `.env.example` to `.env`, `npm run dev` (port 5050)
+3. `client/`: `npm install`, `npm run dev` (port 5173)
+4. Load data: in `python-analysis/stocks/` and `python-analysis/cricket/`, create a venv, install
+   `requirements.txt`, then run each folder's `fetch_data.py` followed by its load script
+   (`load_to_postgres.py` / `parse_and_load.py`)
+
 ## Status
 
-🚧 Early scaffold — architecture in place, dashboards not yet built.
+✅ Both flagship case studies (stocks, cricket) are live end-to-end.
