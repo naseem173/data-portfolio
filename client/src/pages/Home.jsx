@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 const projects = [
   {
     to: '/projects/stocks',
-    title: 'Stock Market Analytics',
+    title: 'Indian Stock Market Analytics',
     description:
-      '5 years of daily OHLCV data, PostgreSQL window functions for returns/volatility/moving averages, live dashboard.',
+      '5 years of NSE daily OHLCV data across 12 large-caps, PostgreSQL window functions for returns/volatility/moving averages, live price quotes.',
     status: 'live',
   },
   {

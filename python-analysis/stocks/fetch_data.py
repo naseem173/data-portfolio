@@ -3,17 +3,25 @@ import pathlib
 import yfinance as yf
 
 TICKERS = {
-    "AAPL": "Apple Inc.",
-    "MSFT": "Microsoft Corp.",
-    "GOOGL": "Alphabet Inc.",
-    "TSLA": "Tesla Inc.",
-    "SPY": "SPDR S&P 500 ETF",
-    # Indian stocks (NSE, via Yahoo Finance's .NS suffix)
+    # Indian stocks (NSE, via Yahoo Finance's .NS suffix) - primary focus, across sectors
     "RELIANCE.NS": "Reliance Industries Ltd.",
     "TCS.NS": "Tata Consultancy Services Ltd.",
     "INFY.NS": "Infosys Ltd.",
     "HDFCBANK.NS": "HDFC Bank Ltd.",
     "ICICIBANK.NS": "ICICI Bank Ltd.",
+    "SBIN.NS": "State Bank of India",
+    "BHARTIARTL.NS": "Bharti Airtel Ltd.",
+    "ITC.NS": "ITC Ltd.",
+    "HINDUNILVR.NS": "Hindustan Unilever Ltd.",
+    "BAJFINANCE.NS": "Bajaj Finance Ltd.",
+    "MARUTI.NS": "Maruti Suzuki India Ltd.",
+    "LT.NS": "Larsen & Toubro Ltd.",
+    # US stocks - kept for cross-market comparison
+    "AAPL": "Apple Inc.",
+    "MSFT": "Microsoft Corp.",
+    "GOOGL": "Alphabet Inc.",
+    "TSLA": "Tesla Inc.",
+    "SPY": "SPDR S&P 500 ETF",
 }
 
 RAW_DIR = pathlib.Path(__file__).parent / "data" / "raw"

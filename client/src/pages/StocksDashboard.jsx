@@ -24,7 +24,7 @@ function fmtPrice(symbol, value) {
 export default function StocksDashboard() {
   const [symbols, setSymbols] = useState([])
   const [rankings, setRankings] = useState([])
-  const [selected, setSelected] = useState('AAPL')
+  const [selected, setSelected] = useState('RELIANCE.NS')
   const [analysis, setAnalysis] = useState([])
   const [loading, setLoading] = useState(true)
   const [live, setLive] = useState(null)
@@ -71,13 +71,13 @@ export default function StocksDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-semibold text-gray-900">Stock Market Analytics</h1>
+      <h1 className="text-3xl font-semibold text-gray-900">Indian Stock Market Analytics</h1>
       <p className="text-gray-500 mt-1">
-        5 years of daily price data, PostgreSQL window-function analysis, live from Postgres → Express → React.
+        5 years of NSE daily price data, PostgreSQL window-function analysis, live quotes — Postgres → Express → React.
       </p>
 
-      <TickerGroup label="US" tickers={usTickers} selected={selected} onSelect={setSelected} />
       <TickerGroup label="India (NSE)" tickers={inTickers} selected={selected} onSelect={setSelected} />
+      <TickerGroup label="US (for comparison)" tickers={usTickers} selected={selected} onSelect={setSelected} />
 
       <LivePriceCard symbol={selected} live={live} />
 
