@@ -11,12 +11,23 @@ import {
 } from 'recharts'
 import { api } from '../api/client'
 
+const LIVE_POLL_MS = 15_000
+
+function currencySymbol(symbol) {
+  return symbol.endsWith('.NS') ? '₹' : '$'
+}
+
+function fmtPrice(symbol, value) {
+  return `${currencySymbol(symbol)}${Number(value).toFixed(2)}`
+}
+
 export default function StocksDashboard() {
   const [symbols, setSymbols] = useState([])
   const [rankings, setRankings] = useState([])
   const [selected, setSelected] = useState('AAPL')
   const [analysis, setAnalysis] = useState([])
   const [loading, setLoading] = useState(true)
+  const [live, setLive] = useState(null)
 
   useEffect(() => {
     api.get('/api/stocks/symbols').then((res) => setSymbols(res.data))
@@ -31,7 +42,32 @@ export default function StocksDashboard() {
     })
   }, [selected])
 
+  useEffect(() => {
+    let cancelled = false
+    setLive(null)
+
+    const fetchLive = () => {
+      api
+        .get(`/api/stocks/${selected}/live`)
+        .then((res) => {
+          if (!cancelled) setLive(res.data)
+        })
+        .catch(() => {
+          if (!cancelled) setLive((prev) => prev ?? { error: true })
+        })
+    }
+
+    fetchLive()
+    const id = setInterval(fetchLive, LIVE_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [selected])
+
   const latest = analysis[analysis.length - 1]
+  const usTickers = symbols.filter((s) => !s.symbol.endsWith('.NS'))
+  const inTickers = symbols.filter((s) => s.symbol.endsWith('.NS'))
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
@@ -40,30 +76,19 @@ export default function StocksDashboard() {
         5 years of daily price data, PostgreSQL window-function analysis, live from Postgres → Express → React.
       </p>
 
-      <div className="mt-6 flex gap-2 flex-wrap">
-        {symbols.map((s) => (
-          <button
-            key={s.symbol}
-            onClick={() => setSelected(s.symbol)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${
-              selected === s.symbol
-                ? 'bg-gray-900 text-white border-gray-900'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-            }`}
-          >
-            {s.symbol}
-          </button>
-        ))}
-      </div>
+      <TickerGroup label="US" tickers={usTickers} selected={selected} onSelect={setSelected} />
+      <TickerGroup label="India (NSE)" tickers={inTickers} selected={selected} onSelect={setSelected} />
+
+      <LivePriceCard symbol={selected} live={live} />
 
       {latest && (
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Stat label="Latest close" value={`$${Number(latest.close).toFixed(2)}`} />
+          <Stat label="Latest close" value={fmtPrice(selected, latest.close)} />
           <Stat
             label="Daily return"
             value={latest.daily_return_pct ? `${Number(latest.daily_return_pct).toFixed(2)}%` : '—'}
           />
-          <Stat label="20-day MA" value={`$${Number(latest.ma_20).toFixed(2)}`} />
+          <Stat label="20-day MA" value={fmtPrice(selected, latest.ma_20)} />
           <Stat
             label="30d volatility"
             value={latest.rolling_30d_volatility_pct ? `${Number(latest.rolling_30d_volatility_pct).toFixed(2)}%` : '—'}
@@ -108,8 +133,8 @@ export default function StocksDashboard() {
             <tr key={r.symbol} className="border-t border-gray-100">
               <td className="px-4 py-2">{r.return_rank}</td>
               <td className="px-4 py-2 font-medium">{r.symbol}</td>
-              <td className="px-4 py-2 text-right">${Number(r.first_close).toFixed(2)}</td>
-              <td className="px-4 py-2 text-right">${Number(r.last_close).toFixed(2)}</td>
+              <td className="px-4 py-2 text-right">{fmtPrice(r.symbol, r.first_close)}</td>
+              <td className="px-4 py-2 text-right">{fmtPrice(r.symbol, r.last_close)}</td>
               <td
                 className={`px-4 py-2 text-right font-medium ${
                   Number(r.total_return_pct) >= 0 ? 'text-green-600' : 'text-red-600'
@@ -121,6 +146,64 @@ export default function StocksDashboard() {
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+function TickerGroup({ label, tickers, selected, onSelect }) {
+  if (tickers.length === 0) return null
+  return (
+    <div className="mt-4 first:mt-6">
+      <div className="text-xs uppercase tracking-wide text-gray-400 mb-1.5">{label}</div>
+      <div className="flex gap-2 flex-wrap">
+        {tickers.map((s) => (
+          <button
+            key={s.symbol}
+            onClick={() => onSelect(s.symbol)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${
+              selected === s.symbol
+                ? 'bg-gray-900 text-white border-gray-900'
+                : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+            }`}
+          >
+            {s.symbol.replace('.NS', '')}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function LivePriceCard({ symbol, live }) {
+  const isUp = live && !live.error && live.change >= 0
+  return (
+    <div className="mt-6 bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+      <div>
+        <div className="text-xs uppercase tracking-wide text-gray-400 flex items-center gap-1.5">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          Live price · {symbol}
+        </div>
+        {live && !live.error ? (
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-semibold text-gray-900">
+              {currencySymbol(symbol)}
+              {Number(live.price).toFixed(2)}
+            </span>
+            <span className={`text-sm font-medium ${isUp ? 'text-green-600' : 'text-red-600'}`}>
+              {isUp ? '+' : ''}
+              {Number(live.change).toFixed(2)} ({Number(live.changePercent).toFixed(2)}%)
+            </span>
+          </div>
+        ) : (
+          <div className="text-gray-400 mt-1">Fetching live quote…</div>
+        )}
+      </div>
+      {live && !live.error && (
+        <div className="text-right text-xs text-gray-400">
+          <div>{live.marketState === 'REGULAR' ? 'Market open' : 'Market closed'}</div>
+          <div>as of {new Date(live.asOf).toLocaleTimeString()}</div>
+        </div>
+      )}
     </div>
   )
 }

@@ -8,6 +8,12 @@ TICKERS = {
     "GOOGL": "Alphabet Inc.",
     "TSLA": "Tesla Inc.",
     "SPY": "SPDR S&P 500 ETF",
+    # Indian stocks (NSE, via Yahoo Finance's .NS suffix)
+    "RELIANCE.NS": "Reliance Industries Ltd.",
+    "TCS.NS": "Tata Consultancy Services Ltd.",
+    "INFY.NS": "Infosys Ltd.",
+    "HDFCBANK.NS": "HDFC Bank Ltd.",
+    "ICICIBANK.NS": "ICICI Bank Ltd.",
 }
 
 RAW_DIR = pathlib.Path(__file__).parent / "data" / "raw"

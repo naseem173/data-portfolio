@@ -1,7 +1,13 @@
 import { Router } from 'express'
+import YahooFinance from 'yahoo-finance2'
 import { pool } from '../db.js'
 
 const router = Router()
+const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
+
+// Simple in-memory cache so rapid polling doesn't hammer Yahoo Finance
+const liveCache = new Map()
+const LIVE_TTL_MS = 15_000
 
 // GET /api/stocks/symbols
 router.get('/symbols', async (req, res) => {
@@ -73,6 +79,32 @@ router.get('/rankings', async (req, res) => {
     ORDER BY return_rank
   `)
   res.json(rows)
+})
+
+// GET /api/stocks/:symbol/live - current quote (cached briefly to avoid rate limits)
+router.get('/:symbol/live', async (req, res) => {
+  const symbol = req.params.symbol.toUpperCase()
+  const cached = liveCache.get(symbol)
+  if (cached && Date.now() - cached.fetchedAt < LIVE_TTL_MS) {
+    return res.json(cached.data)
+  }
+
+  try {
+    const q = await yf.quote(symbol)
+    const data = {
+      symbol,
+      price: q.regularMarketPrice,
+      change: q.regularMarketChange,
+      changePercent: q.regularMarketChangePercent,
+      currency: q.currency,
+      marketState: q.marketState,
+      asOf: q.regularMarketTime,
+    }
+    liveCache.set(symbol, { data, fetchedAt: Date.now() })
+    res.json(data)
+  } catch (err) {
+    res.status(502).json({ error: 'Failed to fetch live quote', detail: err.message })
+  }
 })
 
 export default router
