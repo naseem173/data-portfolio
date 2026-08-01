@@ -1,12 +1,35 @@
-name: Trigger Netlify deploy
+name: Deploy client to Netlify
 
 on:
   push:
     branches: [main]
+    paths:
+      - "client/**"
+      - ".github/workflows/deploy-netlify.yml"
 
 jobs:
-  trigger:
+  deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
     steps:
-      - name: Call Netlify build hook
-        run: curl -sS -X POST "${{ secrets.NETLIFY_BUILD_HOOK }}"
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+
+      - name: Deploy to Netlify
+        run: npx netlify-cli deploy --prod --dir=dist
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
