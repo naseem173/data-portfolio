@@ -39,11 +39,14 @@ docs/               Planning docs, architecture notes, write-ups
 
 ## Deployment
 
-- **Client**: Netlify (static build, `client/public/_redirects` handles React Router SPA routing)
+- **Client**: Netlify (static build, `client/public/_redirects` handles React Router SPA routing).
+  Auto-deploys on every push to `main` via `.github/workflows/deploy-netlify.yml` (builds in CI,
+  pushes the output with the Netlify CLI - no manual step needed).
 - **API + Postgres**: Railway (single project, `server/` deployed as its own service; `DATABASE_URL`
-  references the Postgres service internally)
-- To redeploy the client: `cd client && npm run build && netlify deploy --prod --dir=dist`
-- To redeploy the API: `railway up server --path-as-root --service api`
+  references the Postgres service internally). Auto-deploy on push isn't wired up: Railway's CLI
+  only accepts a token created via their dashboard for `RAILWAY_TOKEN`, not one created via their
+  API, so this stays a manual step after backend changes:
+  `railway up server --path-as-root --service api`
 - To reload data on the deployed Postgres: set `DATABASE_URL` to Railway's Postgres connection
   string (via a TCP proxy for external access) and re-run each `python-analysis/*` load script
 
